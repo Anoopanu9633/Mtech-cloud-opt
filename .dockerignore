@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.env
+cloud_cost_optimizer.db
+.git
+.vscode

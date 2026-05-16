@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cloud-cost-optimizer
+  labels:
+    app: cloud-cost-optimizer
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: cloud-cost-optimizer
+  template:
+    metadata:
+      labels:
+        app: cloud-cost-optimizer
+    spec:
+      containers:
+        - name: cloud-cost-optimizer
+          image: cloud-cost-optimizer:latest
+          ports:
+            - containerPort: 8000
+          env:
+            - name: AZURE_SUBSCRIPTION_ID
+              value: "${AZURE_SUBSCRIPTION_ID}"
+            - name: AZURE_TENANT_ID
+              value: "${AZURE_TENANT_ID}"
+            - name: AZURE_CLIENT_ID
+              value: "${AZURE_CLIENT_ID}"
+            - name: AZURE_CLIENT_SECRET
+              value: "${AZURE_CLIENT_SECRET}"
