@@ -57,44 +57,54 @@ def query_cost_data(scope: str = None):
             "grouping": [{"type": "Dimension", "name": "ServiceName"}],
         },
     }
-    response = client.query.usage(scope=scope, parameters=query)
-    rows = []
-    if response and response.properties and response.properties.rows:
-        for row in response.properties.rows:
-            service_name = row[0]
-            cost_amount = float(row[1]) if row[1] is not None else 0.0
-            rows.append(
-                {
-                    "subscription_id": get_subscription_id(),
-                    "service_name": service_name,
-                    "cost_amount": cost_amount,
-                    "currency": response.properties.currency,
-                    "period_start": start,
-                    "period_end": end,
-                }
-            )
-    return rows
+    try:
+        response = client.query.usage(scope=scope, parameters=query)
+        rows = []
+        if response and response.properties and response.properties.rows:
+            for row in response.properties.rows:
+                service_name = row[0]
+                cost_amount = float(row[1]) if row[1] is not None else 0.0
+                rows.append(
+                    {
+                        "subscription_id": get_subscription_id(),
+                        "service_name": service_name,
+                        "cost_amount": cost_amount,
+                        "currency": response.properties.currency,
+                        "period_start": start,
+                        "period_end": end,
+                    }
+                )
+        return rows
+    except Exception as e:
+        # Handle Azure SDK deserialization errors gracefully
+        print(f"Warning: Failed to fetch cost data: {e}")
+        return []
 
 
 def query_metrics(resource_id: str, metric_names: list[str], timespan=None, interval="PT1H"):
     client = build_metrics_client()
     if timespan is None:
         timespan = timedelta(days=7)
-    result = client.query_resource(
-        resource_id,
-        metric_names=metric_names,
-        timespan=timespan,
-        interval=interval,
-        aggregations=["Average"],
-    )
-    metrics = {}
-    for metric in result.metrics:
-        if not metric.timeseries:
-            continue
-        series = metric.timeseries[0]
-        values = [point.average for point in series.data if point.average is not None]
-        metrics[metric.name.localized_value] = sum(values) / len(values) if values else 0.0
-    return metrics
+    try:
+        result = client.query_resource(
+            resource_id,
+            metric_names=metric_names,
+            timespan=timespan,
+            interval=interval,
+            aggregations=["Average"],
+        )
+        metrics = {}
+        for metric in result.metrics:
+            if not metric.timeseries:
+                continue
+            series = metric.timeseries[0]
+            values = [point.average for point in series.data if point.average is not None]
+            metrics[metric.name.localized_value] = sum(values) / len(values) if values else 0.0
+        return metrics
+    except Exception as e:
+        # Handle Azure SDK errors gracefully
+        print(f"Warning: Failed to fetch metrics for {resource_id}: {e}")
+        return {}
 
 
 def get_resource_status(resource):

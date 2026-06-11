@@ -1,43 +1,116 @@
-# Implementation Steps
+# Implementation & Build Process
 
-## 1. Clone and prepare the repository
+## Overview
 
-- Clone the repository to your local machine.
-- Install Python 3.11+.
-- Create a `.env` file with Azure credentials and subscription values.
+This document describes the step-by-step process to create and run the Cloud Cost Optimization System using Microsoft Azure. It covers the technologies used, required tools, project structure, development phases, and the architecture diagram.
 
-## 2. Install project dependencies
+## Requirements
+
+### Software Requirements
+
+- Python 3.11 or 3.14
+- Git
+- Docker
+- Azure CLI (optional, for authentication)
+- A code editor such as Visual Studio Code
+- GitHub account for repository and GitHub Actions
+
+### Azure Requirements
+
+- Azure subscription
+- Service principal with the following permissions:
+  - `Cost Management Reader`
+  - `Monitoring Reader`
+  - `Reader` or higher on the target resource scope
+- Azure resource group and at least one active resource (VM, storage, etc.)
+
+### Project Dependencies
+
+Install the dependencies from `requirements.txt`:
 
 ```bash
 python -m pip install -r requirements.txt
 ```
 
-## 3. Configure Azure credentials
+### Environment Variables
 
-Set these environment variables:
+Create a `.env` file or export the following environment variables:
 
 - `AZURE_TENANT_ID`
 - `AZURE_CLIENT_ID`
 - `AZURE_CLIENT_SECRET`
 - `AZURE_SUBSCRIPTION_ID`
+- `DATABASE_URL` (optional, default is `sqlite:///./cloud_cost_optimizer.db`)
 
-The project uses `DefaultAzureCredential` from the Azure Identity library.
+## Languages and Tools Used
 
-## 4. Run the FastAPI application
+- **Python**: core application logic, Azure SDK integration, data processing
+- **FastAPI**: backend REST API framework
+- **SQLAlchemy**: database modeling and persistence layer
+- **Docker**: containerization
+- **GitHub Actions**: CI/CD automation
+- **Power BI**: visualization and reporting
+- **YAML**: workflow and Kubernetes manifest configuration
+- **Markdown**: documentation and report files
 
-```bash
-uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000
-```
+## Step-by-Step Creation Process
 
-## 5. Validate the REST API
+### Step 1: Setup Project Structure
 
-Open the Swagger UI at:
+Create the following folders:
 
-```
-http://localhost:8000/docs
-```
+- `backend/`
+- `collector/`
+- `optimizer/`
+- `database/`
+- `dashboard/`
+- `docker/`
+- `k8s/`
+- `.github/workflows/`
+- `docs/`
 
-Key endpoints:
+Add initial files:
+
+- `backend/main.py`
+- `collector/azure_client.py`
+- `collector/data_fetcher.py`
+- `optimizer/engine.py`
+- `database/db.py`
+- `database/models.py`
+- `database/repository.py`
+- `docker/Dockerfile`
+- `.github/workflows/ci-cd.yml`
+
+### Step 2: Configure the Database
+
+Use SQLAlchemy to define models for:
+
+- `ResourceMetric`
+- `CostRecord`
+- `Recommendation`
+- `SavingsEstimate`
+
+Implement a DB initialization function in `database/db.py`.
+
+### Step 3: Build Azure Integration
+
+Implement Azure clients in `collector/azure_client.py`:
+
+- `DefaultAzureCredential` authentication
+- `ResourceManagementClient` for resource discovery
+- `MetricsQueryClient` for performance metrics
+- `CostManagementClient` for cost data
+
+Create data-fetching logic in `collector/data_fetcher.py` to:
+
+- discover resources
+- query metrics
+- query cost data
+- save results to the database
+
+### Step 4: Create Backend APIs
+
+Build `backend/main.py` with endpoints for:
 
 - `/get-costs`
 - `/get-resource-utilization`
@@ -45,43 +118,139 @@ Key endpoints:
 - `/get-savings`
 - `/get-idle-resources`
 
-## 6. Collect Azure data
+Set up FastAPI with dependency injection for DB sessions.
 
-Each endpoint triggers Azure data collection and writes records to SQLite.
+### Step 5: Implement the Optimization Engine
 
-## 7. Review recommendations
+Create `optimizer/engine.py` with rule-based recommendations:
 
-The optimizer applies rule-based logic to detect:
+- CPU underutilized rule
+- unattached disk rule
+- non-production shutdown rule
 
-- low-CPU VMs
-- unattached disks
-- non-production workloads running outside office hours
+Store generated recommendations and savings estimates in the database.
 
-## 8. Prepare Power BI dashboard data
+### Step 6: Add Dashboard Export Support
 
-Use `dashboard/powerbi/data_prep.py` to generate a CSV export for Power BI.
+Implement Power BI export support in `dashboard/powerbi/data_prep.py`.
 
-## 9. Dockerize the application
+This prepares CSV files containing:
 
-Build and run with:
+- cost records
+- utilization metrics
+- recommendations and estimated savings
 
-```bash
-docker build -t cloud-cost-optimizer .
-docker run --rm -p 8000:8000 --env-file .env cloud-cost-optimizer
+### Step 7: Containerize the Application
+
+Create `Dockerfile` and `docker/docker-compose.yml`.
+
+The Dockerfile should:
+
+- install Python dependencies
+- copy project files
+- run `uvicorn backend.main:app --host 0.0.0.0 --port 8000`
+
+### Step 8: Add CI/CD Workflow
+
+Configure `.github/workflows/ci-cd.yml` to:
+
+- checkout source
+- install dependencies
+- run tests
+- build Docker image
+
+### Step 9: Optional Kubernetes Deployment
+
+Add `k8s/deployment.yaml` and `k8s/service.yaml` for future scaling in AKS or any Kubernetes cluster.
+
+## How the Process Works
+
+### User / Developer Workflow
+
+1. Developer clones the repository.
+2. They install dependencies and configure Azure credentials.
+3. The FastAPI app is started locally.
+4. A user calls API endpoints to collect data and fetch results.
+
+### Internal Application Workflow
+
+1. **API receives request**
+   - FastAPI endpoint is called.
+2. **Collector fetches Azure data**
+   - Resource discovery
+   - Metrics query
+   - Cost query
+3. **Database saves records**
+   - Metrics and cost rows are persisted
+4. **Optimizer evaluates data**
+   - Categories idle or underutilized resources
+   - Generates recommendations
+5. **Results are returned**
+   - API returns JSON responses
+6. **Dashboard export**
+   - CSV is generated for Power BI reporting
+
+## Architecture Diagram
+
+```text
+         +-----------------------+
+         |   Azure Resources     |
+         | (VMs, Disks, Storage) |
+         +----------+------------+
+                    |
+                    v
+    +---------------+-----------------+
+    | Azure Monitor + Cost Management |
+    |    API Layer (Telemetry & Cost) |
+    +---------------+-----------------+
+                    |
+                    v
+           +--------+---------+
+           | Data Collection  |
+           |   Layer          |
+           | (collector/*)    |
+           +--------+---------+
+                    |
+                    v
+           +--------+---------+
+           | Optimization      |
+           | Engine            |
+           | (optimizer/*)     |
+           +--------+---------+
+                    |
+                    v
+    +---------------+-----------------+
+    |   Database Layer               |
+    | (SQLite / Azure SQL / Postgres)|
+    +---------------+-----------------+
+                    |
+                    v
+           +--------+---------+
+           | API / Reporting   |
+           | (FastAPI + PowerBI)|
+           +-------------------+
 ```
 
-## 10. CI/CD with GitHub Actions
+## Commands to Run the Application
 
-The workflow defined in `.github/workflows/ci-cd.yml`:
+```bash
+cd "c:\Users\preet\Downloads\Cloud Optimization"
+python -m pip install -r requirements.txt
+copy .env.example .env
+# populate .env with Azure values
+python -m uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000
+```
 
-- installs dependencies
-- runs tests
-- performs static syntax validation
-- builds the Docker image
+Then use the endpoints:
 
-## 11. Optional Kubernetes deployment
+```bash
+curl http://localhost:8000/get-costs
+curl http://localhost:8000/get-resource-utilization
+curl http://localhost:8000/get-recommendations
+curl http://localhost:8000/get-savings
+curl http://localhost:8000/get-idle-resources
+```
 
-Use the manifests in `k8s/` to deploy to AKS or any Kubernetes cluster.
+## Summary
 
-- `k8s/deployment.yaml`
-- `k8s/service.yaml`
+This application is built using Python and FastAPI for the backend, Azure SDKs for cloud integration, SQLAlchemy for database persistence, Docker for containerization, and GitHub Actions for CI/CD. The system collects Azure cost and usage data, applies optimization rules, stores results, and exports dashboard-ready reports for Power BI.

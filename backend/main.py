@@ -1,5 +1,6 @@
 from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy.orm import Session
+from dotenv import load_dotenv
 
 from database.db import init_db, get_db
 from collector.data_fetcher import AzureDataFetcher
@@ -11,6 +12,9 @@ from database.repository import (
     get_latest_savings,
     get_idle_resources,
 )
+
+# Load environment variables from .env file
+load_dotenv()
 
 app = FastAPI(
     title="Cloud Cost Optimization System",

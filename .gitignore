@@ -7,3 +7,4 @@ cloud_cost_optimizer.db
 .vscode/
 .DS_Store
 docker-compose.override.yml
+cred cloud cost.txt
