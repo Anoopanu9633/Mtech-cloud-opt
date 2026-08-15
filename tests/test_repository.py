@@ -1,9 +1,24 @@
 from datetime import datetime
+from types import SimpleNamespace
+
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
+from collector.azure_client import extract_metric_name
 from database.db import Base
 from database.models import CostRecord, ResourceMetric
+
+
+def test_extract_metric_name_handles_string_and_localized_value():
+    assert extract_metric_name(SimpleNamespace(name="UsedCapacity")) == "UsedCapacity"
+    assert (
+        extract_metric_name(
+            SimpleNamespace(
+                name=SimpleNamespace(localized_value="Used Capacity", value="UsedCapacity")
+            )
+        )
+        == "Used Capacity"
+    )
 
 
 def test_sqlite_in_memory_database():

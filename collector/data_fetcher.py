@@ -1,8 +1,6 @@
 import os
-from datetime import datetime
-from azure.core.exceptions import HttpResponseError
 
-from collector.azure_client import query_cost_data, query_metrics, query_resource_list, get_resource_status
+from collector.azure_client import get_resource_status, query_cost_data, query_metrics, query_resource_list
 from database.repository import save_cost_records, save_resource_metrics
 
 
@@ -10,17 +8,29 @@ class AzureDataFetcher:
     def __init__(self):
         self.subscription_id = os.getenv("AZURE_SUBSCRIPTION_ID")
 
+    def _get_metric_names_for_resource(self, resource):
+        resource_type = getattr(resource, "type", "").lower()
+        if "microsoft.storage/storageaccounts" in resource_type:
+            return ["UsedCapacity"]
+        if "microsoft.compute/virtualmachines" in resource_type:
+            return ["Percentage CPU", "Disk Read Bytes", "Disk Write Bytes"]
+        return []
+
     def _build_resource_metric(self, resource, metrics):
+        resource_type = getattr(resource, "type", "").lower()
+        is_storage_account = "microsoft.storage/storageaccounts" in resource_type
+        cpu_value = None if is_storage_account else metrics.get("Percentage CPU")
+
         return {
             "resource_id": resource.id,
             "resource_name": getattr(resource, "name", "unknown"),
             "resource_type": getattr(resource, "type", "unknown"),
             "subscription_id": self.subscription_id,
             "region": getattr(resource, "location", "unknown"),
-            "cpu_utilization": metrics.get("Percentage CPU", metrics.get("CPU Percentage", 0.0)),
+            "cpu_utilization": cpu_value,
             "disk_read_bytes": metrics.get("Disk Read Bytes", 0.0),
             "disk_write_bytes": metrics.get("Disk Write Bytes", 0.0),
-            "storage_used_gb": metrics.get("Used Capacity", 0.0),
+            "storage_used_gb": metrics.get("UsedCapacity", metrics.get("Used Capacity", 0.0)),
             "status": get_resource_status(resource),
         }
 
@@ -33,11 +43,9 @@ class AzureDataFetcher:
         records = []
         for resource in resources:
             try:
-                metrics = query_metrics(
-                    resource.id,
-                    metric_names=["Percentage CPU", "CPU Percentage", "Used Capacity", "Disk Read Bytes", "Disk Write Bytes"],
-                )
-            except HttpResponseError:
+                metric_names = self._get_metric_names_for_resource(resource)
+                metrics = query_metrics(resource.id, metric_names=metric_names)
+            except Exception:
                 metrics = {}
 
             resource_metric = self._build_resource_metric(resource, metrics)

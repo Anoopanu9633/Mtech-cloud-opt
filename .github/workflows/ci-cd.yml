@@ -1,4 +1,4 @@
-name: CI/CD
+name: Cloud Cost Optimizer CI
 
 on:
   push:
@@ -11,30 +11,50 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Cache Python dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: 3.11
+          python-version: '3.11'
       - name: Install dependencies
-        run: python -m pip install --upgrade pip && pip install -r requirements.txt
-      - name: Run tests
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      - name: Run unit tests
         run: pytest -q
-      - name: Static syntax check
-        run: python -m py_compile backend/main.py database/db.py database/models.py collector/azure_client.py collector/data_fetcher.py optimizer/engine.py
+      - name: Validate Python syntax
+        run: |
+          python -m py_compile backend/main.py database/db.py database/models.py collector/azure_client.py collector/data_fetcher.py optimizer/engine.py
+
+      - name: Run export script
+        run: |
+          python export_data.py
+
+      - name: Upload export artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: cloud-cost-optimizer-exports
+          path: exports/**
 
   docker-build:
-    runs-on: ubuntu-latest
     needs: test
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - name: Build Docker image
         run: docker build -t cloud-cost-optimizer .
 
   deploy:
-    runs-on: ubuntu-latest
     needs: docker-build
+    runs-on: ubuntu-latest
     steps:
       - name: Deployment placeholder
         run: |
-          echo "Deployment pipeline executed"
-          echo "Add Azure Container Registry or AKS deployment steps here."
+          echo "GitHub Actions pipeline completed successfully."
+          echo "Configure deployment steps for Azure Container Registry or Kubernetes here."

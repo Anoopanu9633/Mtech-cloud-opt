@@ -1,0 +1,114 @@
+═══════════════════════════════════════════════════════════════
+  🚀 EXACT COMMANDS TO RUN YOUR APPLICATION
+═══════════════════════════════════════════════════════════════
+
+📋 OPEN POWERSHELL AND RUN THESE COMMANDS IN ORDER:
+
+
+STEP 1: Add Azure CLI to PATH
+─────────────────────────────────────────────────────────────
+$env:Path += ";C:\Program Files\Microsoft SDKs\Azure\CLI2\wbin"
+
+
+STEP 2: Login to Azure
+─────────────────────────────────────────────────────────────
+az login --service-principal -u $env:AZURE_CLIENT_ID -p $env:AZURE_CLIENT_SECRET --tenant $env:AZURE_TENANT_ID
+
+
+STEP 3: Set Subscription
+─────────────────────────────────────────────────────────────
+az account set --subscription $env:AZURE_SUBSCRIPTION_ID
+
+
+STEP 4: ⭐ START THE APPLICATION ⭐
+─────────────────────────────────────────────────────────────
+python -m uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000
+
+   ✨ Server will start on http://localhost:8000
+   ✨ Keep this terminal running
+
+
+═══════════════════════════════════════════════════════════════
+
+🧪 IN ANOTHER TERMINAL, TEST IT:
+─────────────────────────────────────────────────────────────
+
+1. Health Check:
+   curl http://localhost:8000/health
+
+2. Get Resources:
+   curl http://localhost:8000/get-resource-utilization
+
+3. Get Recommendations:
+   curl http://localhost:8000/get-recommendations
+
+4. Export Data to CSV:
+   python export_data.py
+
+
+═══════════════════════════════════════════════════════════════
+
+🌐 ACCESS YOUR APPLICATION:
+─────────────────────────────────────────────────────────────
+
+• Main API:          http://localhost:8000
+• Swagger Docs:      http://localhost:8000/docs       (Interactive API explorer)
+• ReDoc:             http://localhost:8000/redoc      (API documentation)
+
+
+═══════════════════════════════════════════════════════════════
+
+⚡ FASTEST WAY - ALL IN ONE COMMAND:
+─────────────────────────────────────────────────────────────
+
+Copy and paste this entire line:
+
+$env:Path += ";C:\Program Files\Microsoft SDKs\Azure\CLI2\wbin"; az login --service-principal -u $env:AZURE_CLIENT_ID -p $env:AZURE_CLIENT_SECRET --tenant $env:AZURE_TENANT_ID; az account set --subscription $env:AZURE_SUBSCRIPTION_ID; python -m uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000
+
+
+═══════════════════════════════════════════════════════════════
+
+🎯 OR USE THE AUTOMATIC BATCH FILE:
+─────────────────────────────────────────────────────────────
+
+Just run:
+   .\start-app.bat
+
+(It does all the above steps automatically!)
+
+
+═══════════════════════════════════════════════════════════════
+
+📊 WHAT YOU CAN DO:
+─────────────────────────────────────────────────────────────
+
+✅ View API Documentation at http://localhost:8000/docs
+✅ Test all endpoints with Swagger UI
+✅ Get resource metrics from your Azure subscription
+✅ Get optimization recommendations
+✅ Export data to CSV for Power BI
+✅ View database records
+
+
+═══════════════════════════════════════════════════════════════
+
+❌ TROUBLESHOOTING:
+─────────────────────────────────────────────────────────────
+
+If port 8000 is already in use:
+   netstat -ano | findstr :8000
+   taskkill /PID <PID> /F
+
+If Azure authentication fails:
+   • Check .env file has correct credentials
+   • Verify Azure service principal exists
+   • Check role assignments: Monitoring Reader, Cost Management Reader
+
+If Python is not found:
+   • Verify Python 3.14+ is installed
+   • Add Python to PATH
+
+
+═══════════════════════════════════════════════════════════════
+Last Updated: 2026-06-12 | Status: ✅ Ready to Run
+═══════════════════════════════════════════════════════════════
