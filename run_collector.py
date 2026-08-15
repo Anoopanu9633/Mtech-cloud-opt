@@ -1,7 +1,7 @@
 from dotenv import load_dotenv
 load_dotenv()
 
-from database.db import SessionLocal
+from database.db import SessionLocal, init_db
 from collector.data_fetcher import AzureDataFetcher
 from export_data import (
     export_cost_records,
@@ -12,6 +12,7 @@ from export_data import (
 
 
 def main():
+    init_db()
     db = SessionLocal()
     fetcher = AzureDataFetcher()
 

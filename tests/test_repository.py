@@ -1,12 +1,22 @@
 from datetime import datetime
 from types import SimpleNamespace
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, inspect
 from sqlalchemy.orm import sessionmaker
 
 from collector.azure_client import extract_metric_name
-from database.db import Base
+from database.db import Base, init_db
 from database.models import CostRecord, ResourceMetric
+
+
+def test_init_db_creates_required_tables():
+    engine = create_engine("sqlite:///:memory:", future=True)
+    init_db(engine)
+    inspector = inspect(engine)
+    assert inspector.has_table("resource_metrics")
+    assert inspector.has_table("cost_records")
+    assert inspector.has_table("recommendations")
+    assert inspector.has_table("savings_estimates")
 
 
 def test_extract_metric_name_handles_string_and_localized_value():

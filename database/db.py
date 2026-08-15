@@ -14,8 +14,9 @@ engine = create_engine(
 SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False, future=True)
 
 
-def init_db():
-    Base.metadata.create_all(bind=engine)
+def init_db(db_engine=None):
+    target_engine = db_engine or engine
+    Base.metadata.create_all(bind=target_engine)
 
 
 def get_db():
