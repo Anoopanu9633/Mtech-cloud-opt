@@ -9,6 +9,8 @@ on:
 
 jobs:
   run-and-upload:
+    permissions:
+      contents: read
     runs-on: ubuntu-latest
     env:
       PYTHONPATH: .
@@ -51,10 +53,7 @@ jobs:
       - name: Authenticate to Azure
         uses: azure/login@v2
         with:
-          client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
-          client-secret: ${{ secrets.AZURE_CLIENT_SECRET }}
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
 
       - name: Upload exports to Azure Blob Storage
         uses: azure/cli@v2
@@ -68,7 +67,7 @@ jobs:
               --auth-mode login \
               --overwrite true
 
-      # NOTE: The Azure service principal must have a Blob Storage role such as
+      # NOTE: The Azure service principal in AZURE_CREDENTIALS must have a Blob Storage role such as
       # "Storage Blob Data Contributor" on the target storage account or resource group.
 
       - name: Upload export artifacts
